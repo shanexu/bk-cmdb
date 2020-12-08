@@ -466,21 +466,21 @@ def main(argv):
     secrets_env = ''
 
     server_ports = {
-        "cmdb_adminserver": 60004,
+        "cmdb_adminserver": 6004,
         "cmdb_apiserver": 8080,
-        "cmdb_datacollection": 60005,
-        "cmdb_eventserver": 60009,
-        "cmdb_hostserver": 60001,
-        "cmdb_coreservice": 50009,
-        "cmdb_procserver": 60003,
-        "cmdb_toposerver": 60002,
+        "cmdb_datacollection": 6005,
+        "cmdb_eventserver": 6009,
+        "cmdb_hostserver": 6001,
+        "cmdb_coreservice": 5009,
+        "cmdb_procserver": 6003,
+        "cmdb_toposerver": 6002,
         "cmdb_webserver": 8083,
-        "cmdb_synchronizeserver": 60010,
-        "cmdb_operationserver": 60011,
-        "cmdb_taskserver": 60012,
-        "cmdb_cloudserver": 60013,
-        "cmdb_authserver": 60014,
-        "cmdb_cacheservice": 50010
+        "cmdb_synchronizeserver": 6010,
+        "cmdb_operationserver": 6011,
+        "cmdb_taskserver": 6012,
+        "cmdb_cloudserver": 6013,
+        "cmdb_authserver": 6014,
+        "cmdb_cacheservice": 5010
     }
     arr = [
         "help", "discovery=", "database=", "redis_ip=", "redis_port=",
