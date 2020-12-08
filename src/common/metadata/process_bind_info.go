@@ -38,7 +38,7 @@ import (
 
 var (
 	// 标准字段，不论在什么环境上都需要使用的
-	ignoreField = map[string]struct{}{"template_row_id": struct{}{}, "row_id": struct{}{}, common.BKIP: struct{}{}, common.BKPort: struct{}{}, common.BKProtocol: struct{}{}, common.BKEnable: struct{}{}}
+	ignoreField = map[string]struct{}{"template_row_id": struct{}{}, "row_id": struct{}{}, common.BKIP: struct{}{}, common.BKPort: struct{}{}, common.BKProtocol: struct{}{}, common.BKEnable: struct{}{}, common.BKName: struct {}{}}
 )
 var (
 	//  内部变量，不允许改变，改变值请用对应的Register 方案
@@ -91,6 +91,7 @@ type stdProcPropertyBindInfoValue struct {
 	Port     PropertyPort     `field:"port" json:"port" bson:"port"`
 	Protocol PropertyProtocol `field:"protocol" json:"protocol" bson:"protocol"`
 	Enable   PropertyBool     `field:"enable" json:"enable" bson:"enable"`
+	Name     PropertyString   `field:"name" json:"name" bson:"name"`
 }
 
 type propertyBindInfoValueInterface interface {
@@ -153,6 +154,9 @@ func (pbi *ProcPropertyBindInfo) Validate() (string, error) {
 		}
 		if err := property.Std.Enable.Validate(); err != nil {
 			return fmt.Sprintf("%s[%d].%s", common.BKProcBindInfo, idx, common.BKEnable), err
+		}
+		if err := property.Std.Name.Validate(); err != nil {
+			return fmt.Sprintf("%s[%d].%s", common.BKProcBindInfo, idx, common.BKName), err
 		}
 		if property.extra != nil {
 			if fieldName, err := property.extra.Validate(); err != nil {
@@ -246,6 +250,19 @@ func (pbi *ProcPropertyBindInfo) ExtractChangeInfoBindInfo(i *Process, host map[
 			}
 		}
 
+		if IsAsDefaultValue(row.Std.Name.AsDefaultValue) {
+			if row.Std.Name.Value == nil && inputProcBindInfo.Std.Name != nil {
+				inputProcBindInfo.Std.Name = nil
+				changed = true
+			} else if row.Std.Name.Value != nil && inputProcBindInfo.Std.Name == nil {
+				inputProcBindInfo.Std.Name = row.Std.Name.Value
+				changed = true
+			} else if row.Std.Name.Value != nil && inputProcBindInfo.Std.Name != nil && *row.Std.Name.Value != *inputProcBindInfo.Std.Name {
+				inputProcBindInfo.Std.Name = row.Std.Name.Value
+				changed = true
+			}
+		}
+
 		if row.extra != nil {
 			extraMap, extraChanged, isExtraNamePortChanged := row.extra.ExtractChangeInfoBindInfo(&inputProcBindInfo)
 			if extraChanged {
@@ -320,6 +337,14 @@ func (pbi *ProcPropertyBindInfo) changeInstanceBindInfo(bindInfoArr []ProcBindIn
 			}
 		}
 
+		if IsAsDefaultValue(row.Std.Name.AsDefaultValue) == true {
+			if row.Std.Name.Value == nil {
+				inputProcBindInfo.Std.Name = nil
+			} else {
+				inputProcBindInfo.Std.Name = row.Std.Name.Value
+			}
+		}
+
 		if row.extra != nil {
 			inputProcBindInfo.extra = row.extra.ExtractInstanceUpdateData(inputProcBindInfo.extra)
 		}
@@ -357,6 +382,7 @@ func cloneProcBindInfoArr(procBindInfoArr []ProcBindInfo) (newData []ProcBindInf
 				Protocol:      bindInfo.Std.Protocol,
 				Enable:        bindInfo.Std.Enable,
 				TemplateRowID: bindInfo.Std.TemplateRowID,
+				Name:          bindInfo.Std.Name,
 			},
 			extra: extra,
 		}
@@ -414,6 +440,12 @@ func (pbi *ProcPropertyBindInfo) DiffWithProcessTemplate(procBindInfoArr []ProcB
 		if (row.Std.Enable == nil && tmpBindInfo.Std.Enable != nil) ||
 			(row.Std.Enable != nil && tmpBindInfo.Std.Enable == nil) ||
 			(row.Std.Enable != nil && tmpBindInfo.Std.Enable != nil && *row.Std.Enable != *tmpBindInfo.Std.Enable) {
+			change = true
+			return
+		}
+		if (row.Std.Name == nil && tmpBindInfo.Std.Name != nil) ||
+			(row.Std.Name != nil && tmpBindInfo.Std.Name == nil) ||
+			(row.Std.Name != nil && tmpBindInfo.Std.Name != nil && *row.Std.Name != *tmpBindInfo.Std.Name) {
 			change = true
 			return
 		}
@@ -501,6 +533,14 @@ func (pbi ProcPropertyBindInfo) NewProcBindInfo(host map[string]interface{}) []P
 			}
 		}
 
+		if IsAsDefaultValue(row.Std.Name.AsDefaultValue) == true {
+			if row.Std.Name.Value == nil {
+				procBindInfo.Std.Name = nil
+			} else {
+				procBindInfo.Std.Name = row.Std.Name.Value
+			}
+		}
+
 		if row.extra != nil {
 			procBindInfo.extra = row.extra.NewProcBindInfo()
 		}
@@ -570,6 +610,9 @@ func (pbi *ProcPropertyBindInfoValue) Validate() (string, error) {
 	if err := pbi.Std.Enable.Validate(); err != nil {
 		return common.BKEnable, err
 	}
+	if err := pbi.Std.Name.Validate(); err != nil {
+		return common.BKName, err
+	}
 	if pbi.extra != nil {
 		return pbi.extra.Validate()
 	}
@@ -596,7 +639,7 @@ func (pbi stdProcPropertyBindInfoValue) toKV() map[string]interface{} {
 	data[common.BKIP] = pbi.IP
 	data[common.BKPort] = pbi.Port
 	data[common.BKProtocol] = pbi.Protocol
-	data[common.BKEnable] = pbi.Enable
+	data[common.BKName] = pbi.Name
 	return data
 }
 
@@ -662,12 +705,14 @@ func (pbi ProcBindInfo) toKV() map[string]interface{} {
 		data[common.BKPort] = nil
 		data[common.BKProtocol] = nil
 		data[common.BKEnable] = nil
+		data[common.BKName] = nil
 	} else {
 		data["template_row_id"] = pbi.Std.TemplateRowID
 		data[common.BKIP] = pbi.Std.IP
 		data[common.BKPort] = pbi.Std.Port
 		data[common.BKProtocol] = pbi.Std.Protocol
 		data[common.BKEnable] = pbi.Std.Enable
+		data[common.BKName] = pbi.Std.Name
 	}
 
 	return data

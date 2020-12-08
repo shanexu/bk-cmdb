@@ -474,6 +474,9 @@ const (
 	// BKEnable the enable
 	BKEnable = "enable"
 
+	// BKName the name
+	BKName = "name"
+
 	// the process object name
 	BKProcessObjectName = "process"
 
