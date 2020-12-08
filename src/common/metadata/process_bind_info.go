@@ -126,6 +126,7 @@ type stdProcBindInfo struct {
 	Port          *string `field:"port" json:"port" bson:"port"`
 	Protocol      *string `field:"protocol" json:"protocol" bson:"protocol"`
 	Enable        *bool   `field:"enable" json:"enable" bson:"enable"`
+	Name          *string `field:"name" json:"name" bson:"name"`
 }
 
 /*** ProcPropertyBindInfo 依赖的方法  ****/
